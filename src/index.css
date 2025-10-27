@@ -401,7 +401,7 @@ body.modal-open {
   justify-content: center;
   z-index: 1000;
   padding: 1rem;
-  overflow: hidden;
+  overflow: auto;
 }
 
 @media (max-width: 640px) {
@@ -424,13 +424,16 @@ body.modal-open {
   display: flex;
   flex-direction: column;
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
+  overflow: hidden visible;
   margin: auto;
 }
 
 @media (max-width: 640px) {
   .modal-content {
-    max-height: 90vh;
+    max-height: 100vh;
+    height: 100vh;
+    border-radius: 0;
+    margin: 0;
   }
 }
 
@@ -466,19 +469,25 @@ body.modal-open {
 }
 
 .modal-body {
+  flex: 1; /* ✅ ocupa todo el espacio restante */
+  min-height: 0; /* ✅ necesario para que el scroll funcione bien */
+  overflow-y: auto; /* ✅ el scroll solo ocurre acá */
   padding: 1.5rem;
-  overflow-y: auto;
-  flex: 1;
-  min-height: 0;
   -webkit-overflow-scrolling: touch;
+  box-sizing: border-box;
 }
 
 .modal-footer {
+  position: sticky; /* ✅ se mantiene visible al final */
+  bottom: 0;
+  background: white;
   padding: 1.5rem;
   border-top: 1px solid #e5e7eb;
   display: flex;
   gap: 1rem;
   justify-content: flex-end;
+  border-bottom-left-radius: 1rem;
+  border-bottom-right-radius: 1rem;
 }
 
 /* Empty cart */
