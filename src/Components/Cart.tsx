@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useCart } from '../context/CartContext'
 import CheckoutForm from './CheckoutForm'
 
@@ -9,8 +9,19 @@ interface CartModalProps {
 
 export default function CartModal({ isOpen, onClose }: CartModalProps) {
   const { items, promociones, updateQuantity, removeItem, getTotal, getTotalItems } = useCart()
-  const [showCheckout, setShowCheckout] = useState(false)
+   const [showCheckout, setShowCheckout] = useState(false)
 
+  useEffect(() => {
+    if (isOpen) {
+      document.body.classList.add('modal-open')
+    } else {
+      document.body.classList.remove('modal-open')
+    }
+
+    return () => {
+      document.body.classList.remove('modal-open')
+    }
+  }, [isOpen])
   if (!isOpen) return null
 
   if (showCheckout) {
@@ -18,7 +29,10 @@ export default function CartModal({ isOpen, onClose }: CartModalProps) {
   }
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay" onClick={onClose} onTouchMove={(e) => {
+  if (e.target === e.currentTarget) {
+    e.preventDefault()
+  } }}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h2>🛒 Tu Pedido</h2>
