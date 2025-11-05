@@ -194,7 +194,7 @@ function App() {
 </button>
         </div>
       </div>
-      <CartModal isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
+      <CartModal isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} config={config} />
         {/* Toast notification */}
 {showToast && (
   <div className="toast">

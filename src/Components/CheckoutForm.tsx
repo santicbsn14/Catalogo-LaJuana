@@ -2,12 +2,12 @@ import { useState } from 'react'
 import type {FormEvent} from 'react'
 import { useCart } from '../context/CartContext'
 import { mockConfiguracion } from '../data/mockData'
-
+import type { Configuracion } from '../types'
 interface CheckoutFormProps {
   onBack: () => void
   onClose: () => void
+  config: Configuracion | null  // Agregá esto
 }
-
 interface FormData {
   nombre: string
   telefono: string
@@ -16,7 +16,7 @@ interface FormData {
   aclaraciones: string
 }
 
-export default function CheckoutForm({ onBack, onClose }: CheckoutFormProps) {
+export default function CheckoutForm({ onBack, onClose, config }: CheckoutFormProps) {
   const { items, promociones, getTotal, clearCart } = useCart()
   const [formData, setFormData] = useState<FormData>({
     nombre: '',
@@ -67,7 +67,7 @@ export default function CheckoutForm({ onBack, onClose }: CheckoutFormProps) {
     
     // Codificar mensaje para URL
     const mensajeCodificado = encodeURIComponent(mensaje)
-    const urlWhatsApp = `https://wa.me/${mockConfiguracion.telefono}?text=${mensajeCodificado}`
+    const urlWhatsApp = `https://wa.me/${config?.telefono}?text=${mensajeCodificado}`
     
     // Abrir WhatsApp
     window.open(urlWhatsApp, '_blank')

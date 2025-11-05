@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react'
 import { useCart } from '../context/CartContext'
 import CheckoutForm from './CheckoutForm'
-
+import type { Configuracion } from '../types'
 interface CartModalProps {
   isOpen: boolean
   onClose: () => void
+  config: Configuracion | null  // Agregá esto
 }
 
-export default function CartModal({ isOpen, onClose }: CartModalProps) {
+export default function CartModal({ isOpen, onClose, config }: CartModalProps) {
   const { items, promociones, updateQuantity, removeItem, getTotal, getTotalItems } = useCart()
    const [showCheckout, setShowCheckout] = useState(false)
 
@@ -25,7 +26,7 @@ export default function CartModal({ isOpen, onClose }: CartModalProps) {
   if (!isOpen) return null
 
   if (showCheckout) {
-    return <CheckoutForm onBack={() => setShowCheckout(false)} onClose={onClose} />
+    return <CheckoutForm onBack={() => setShowCheckout(false)} onClose={onClose} config={config} />  // Pasale la config
   }
 
   return (
