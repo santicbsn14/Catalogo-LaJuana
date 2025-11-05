@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { client } from './lib/sanity'
 import type { Configuracion, Empanada, Promocion } from './types'
-import { mockConfiguracion, mockEmpanadas, mockPromociones } from './data/mockData'
 import { useCart } from './context/CartContext'
 import CartModal from './Components/Cart'
 import log from './Components/Logo400px.png'
