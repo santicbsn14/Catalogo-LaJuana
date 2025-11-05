@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-// import { client } from './lib/sanity'
+import { client } from './lib/sanity'
 import type { Configuracion, Empanada, Promocion } from './types'
 import { mockConfiguracion, mockEmpanadas, mockPromociones } from './data/mockData'
 import { useCart } from './context/CartContext'
@@ -11,37 +11,81 @@ function App() {
   const [promociones, setPromociones] = useState<Promocion[]>([])
   const [loading, setLoading] = useState(true)
   const [isCartOpen, setIsCartOpen] = useState(false)
-  const [showSplash, setShowSplash] = useState(true)
   const [showToast, setShowToast] = useState(false)
-const [toastMessage, setToastMessage] = useState('')
+  const [toastMessage, setToastMessage] = useState('')
+  const [showSplash, setShowSplash] = useState(true)
 
   const { addItem, getTotal, getTotalItems } = useCart()
 
   const handleAddItem = (empanada: Empanada) => {
-  addItem(empanada)
-  setToastMessage(`${empanada.nombre} agregada!`)
-  setShowToast(true)
-  setTimeout(() => setShowToast(false), 3000)
-}
+    addItem(empanada)
+    setToastMessage(`${empanada.nombre} agregada!`)
+    setShowToast(true)
+    setTimeout(() => setShowToast(false), 3000)
+  }
 
-useEffect(() => {
-  // Ocultar splash después de 3 segundos
-  const splashTimer = setTimeout(() => {
-    setShowSplash(false)
-  }, 3000)
-
-  return () => clearTimeout(splashTimer)
-}, [])
   useEffect(() => {
-    // Simulamos un fetch con un pequeño delay
+    const splashTimer = setTimeout(() => {
+      setShowSplash(false)
+    }, 3000)
+
+    return () => clearTimeout(splashTimer)
+  }, [])
+
+  useEffect(() => {
     const fetchData = async () => {
       try {
-        await new Promise(resolve => setTimeout(resolve, 500))
-        
-        // Usamos los datos mock
-        setConfig(mockConfiguracion)
-        setEmpanadas(mockEmpanadas)
-        setPromociones(mockPromociones.filter(p => p.activa))
+        // Traer configuración desde Sanity
+        const configData = await client.fetch<Configuracion>(
+          `*[_type == "configuracion"][0]`
+        )
+        setConfig(configData)
+
+        // Traer empanadas disponibles desde Sanity
+        const empanadasData = await client.fetch<Empanada[]>(
+          `*[_type == "empanada" && disponible == true] | order(orden asc) {
+            _id,
+            nombre,
+            descripcion,
+            precio,
+            imagen,
+            disponible,
+            orden,
+            categoria->{
+              _id,
+              nombre,
+              descripcion,
+              orden
+            }
+          }`
+        )
+        setEmpanadas(empanadasData)
+
+        // Traer promociones activas desde Sanity
+        const promocionesData = await client.fetch<Promocion[]>(
+          `*[_type == "promocion" && activa == true] | order(destacada desc, orden asc) {
+            _id,
+            nombre,
+            descripcion,
+            precio,
+            cantidadTotal,
+            tipo,
+            imagen,
+            activa,
+            destacada,
+            orden,
+            gustosPredeterminados[]{
+              cantidad,
+              empanada->{
+                _id,
+                nombre,
+                precio,
+                imagen
+              }
+            }
+          }`
+        )
+        setPromociones(promocionesData)
       } catch (error) {
         console.error('Error fetching data:', error)
       } finally {
