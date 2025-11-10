@@ -13,6 +13,7 @@ interface FormData {
   telefono: string
   tipoEntrega: 'retiro' | 'envio'
   direccion: string
+  tipoCoccion: 'horno' | 'fritas'  // Agregá esto
   aclaraciones: string
 }
 
@@ -23,6 +24,7 @@ export default function CheckoutForm({ onBack, onClose, config }: CheckoutFormPr
     telefono: '',
     tipoEntrega: 'retiro',
     direccion: '',
+    tipoCoccion: 'horno',
     aclaraciones: '',
   })
 
@@ -34,6 +36,7 @@ export default function CheckoutForm({ onBack, onClose, config }: CheckoutFormPr
     mensaje += `*Cliente:* ${formData.nombre}\n`
     mensaje += `*Teléfono:* ${formData.telefono}\n`
     mensaje += `*Tipo:* ${formData.tipoEntrega === 'retiro' ? 'Retiro en local' : 'Envío a domicilio'}\n`
+    mensaje += `*Cocción:* ${formData.tipoCoccion === 'horno' ? 'Al horno' : 'Fritas'}\n`  // Agregá esto
     
     if (formData.tipoEntrega === 'envio') {
       mensaje += `*Dirección:* ${formData.direccion}\n`
@@ -133,6 +136,19 @@ export default function CheckoutForm({ onBack, onClose, config }: CheckoutFormPr
                 <option value="envio">Envío a domicilio</option>
               </select>
             </div>
+                <div className="form-group">
+      <label htmlFor="tipoCoccion">Tipo de cocción *</label>
+      <select
+        id="tipoCoccion"
+        name="tipoCoccion"
+        value={formData.tipoCoccion}
+        onChange={handleChange}
+        required
+      >
+        <option value="horno">Al horno</option>
+        <option value="fritas">Fritas</option>
+      </select>
+    </div>
 
             {formData.tipoEntrega === 'envio' && (
               <div className="form-group">
