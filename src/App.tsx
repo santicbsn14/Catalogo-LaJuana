@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
 import { client } from './lib/sanity'
-import type { Configuracion, Empanada, Promocion } from './types'
+import type { Configuracion, Empanada, Promocion, PromocionCarrito, ItemCarrito } from './types'
 import { useCart } from './context/CartContext'
 import CartModal from './Components/Cart'
+import PromoSelectorModal from './Components/PromoSelectorModal'
 import log from './Components/Logo400px.png'
+
 function App() {
   const [config, setConfig] = useState<Configuracion | null>(null)
   const [empanadas, setEmpanadas] = useState<Empanada[]>([])
@@ -13,14 +15,49 @@ function App() {
   const [showToast, setShowToast] = useState(false)
   const [toastMessage, setToastMessage] = useState('')
   const [showSplash, setShowSplash] = useState(true)
+  const [selectedPromo, setSelectedPromo] = useState<Promocion | null>(null)
 
-  const { addItem, getTotal, getTotalItems } = useCart()
+  const { addItem, addPromocion, getTotal, getTotalItems } = useCart()
 
   const handleAddItem = (empanada: Empanada) => {
     addItem(empanada)
     setToastMessage(`${empanada.nombre} agregada!`)
     setShowToast(true)
     setTimeout(() => setShowToast(false), 3000)
+  }
+
+  const handleAddPromocion = (promocion: Promocion) => {
+    if (promocion.tipo === 'gustos_a_eleccion') {
+      // Abrir modal para seleccionar gustos
+      setSelectedPromo(promocion)
+    } else if (promocion.tipo === 'gustos_fijos' || promocion.tipo === 'sabor_especifico') {
+      // Agregar directamente con gustos predeterminados
+      const promoCarrito: PromocionCarrito = {
+        promocion,
+        gustosSeleccionados: promocion.gustosPredeterminados?.map(gp => ({
+          empanada: gp.empanada,
+          cantidad: gp.cantidad
+        }))
+      }
+      addPromocion(promoCarrito)
+      setToastMessage(`${promocion.nombre} agregada!`)
+      setShowToast(true)
+      setTimeout(() => setShowToast(false), 3000)
+    }
+  }
+
+  const handlePromoSelectorConfirm = (gustosSeleccionados: ItemCarrito[]) => {
+    if (selectedPromo) {
+      const promoCarrito: PromocionCarrito = {
+        promocion: selectedPromo,
+        gustosSeleccionados
+      }
+      addPromocion(promoCarrito)
+      setToastMessage(`${selectedPromo.nombre} agregada!`)
+      setShowToast(true)
+      setTimeout(() => setShowToast(false), 3000)
+      setSelectedPromo(null)
+    }
   }
 
   useEffect(() => {
@@ -34,13 +71,11 @@ function App() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Traer configuración desde Sanity
         const configData = await client.fetch<Configuracion>(
           `*[_type == "configuracion"][0]`
         )
         setConfig(configData)
 
-        // Traer empanadas disponibles desde Sanity
         const empanadasData = await client.fetch<Empanada[]>(
           `*[_type == "empanada" && disponible == true] | order(orden asc) {
             _id,
@@ -60,7 +95,6 @@ function App() {
         )
         setEmpanadas(empanadasData)
 
-        // Traer promociones activas desde Sanity
         const promocionesData = await client.fetch<Promocion[]>(
           `*[_type == "promocion" && activa == true] | order(destacada desc, orden asc) {
             _id,
@@ -119,7 +153,6 @@ function App() {
 
   return (
     <div style={{ minHeight: '100vh' }}>
-      {/* Splash Screen */}
       {showSplash && (
         <div className="splash-screen">
           <img src={log} alt="Empanadas La Juana" className="splash-logo" />
@@ -127,6 +160,7 @@ function App() {
           <div className="splash-loader"></div>
         </div>
       )}
+      
       <header className="header">
         <div className="container">
           <div className="header-logo-container">
@@ -142,7 +176,6 @@ function App() {
       </header>
 
       <main className="container main-content">
-        {/* Promociones destacadas */}
         {promociones.filter(p => p.destacada).length > 0 && (
           <section className="section">
             <h2 className="section-title">🎉 Promociones</h2>
@@ -151,16 +184,23 @@ function App() {
                 .filter(p => p.destacada)
                 .map(promo => (
                   <div key={promo._id} className="card promo-card">
-                    <h3>{promo.nombre}</h3>
-                    <p>{promo.descripcion}</p>
-                    <p className="promo-price">${promo.precio}</p>
+                    <div>
+                      <h3>{promo.nombre}</h3>
+                      <p>{promo.descripcion}</p>
+                      <p className="promo-price">${promo.precio}</p>
+                    </div>
+                    <button 
+                      className="btn-primary" 
+                      onClick={() => handleAddPromocion(promo)}
+                    >
+                      Agregar
+                    </button>
                   </div>
                 ))}
             </div>
           </section>
         )}
 
-        {/* Catálogo de empanadas */}
         <section className="section">
           <h2 className="section-title">🥟 Nuestras Empanadas</h2>
           <div className="grid">
@@ -182,28 +222,36 @@ function App() {
         </section>
       </main>
 
-      {/* Footer fijo con carrito */}
       <div className="fixed-footer">
         <div className="footer-content">
           <div className="footer-info">
             <p>Total: ${getTotal()}</p>
             <p>{getTotalItems()} items</p>
           </div>
-<button className="btn-primary" onClick={() => setIsCartOpen(true)}>
-  Ver Pedido
-</button>
+          <button className="btn-primary" onClick={() => setIsCartOpen(true)}>
+            Ver Pedido
+          </button>
         </div>
       </div>
+      
       <CartModal isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} config={config} />
-        {/* Toast notification */}
-{showToast && (
-  <div className="toast">
-    <span className="toast-icon">✓</span>
-    <span>{toastMessage}</span>
-  </div>
-)}
+      
+      {selectedPromo && (
+        <PromoSelectorModal
+          promocion={selectedPromo}
+          empanadasDisponibles={empanadas}
+          onConfirm={handlePromoSelectorConfirm}
+          onClose={() => setSelectedPromo(null)}
+        />
+      )}
+
+      {showToast && (
+        <div className="toast">
+          <span className="toast-icon">✓</span>
+          <span>{toastMessage}</span>
+        </div>
+      )}
     </div>
-    
   )
 }
 
