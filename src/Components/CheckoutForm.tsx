@@ -1,19 +1,20 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import type {FormEvent} from 'react'
 import { useCart } from '../context/CartContext'
-import { mockConfiguracion } from '../data/mockData'
 import type { Configuracion } from '../types'
+
 interface CheckoutFormProps {
   onBack: () => void
   onClose: () => void
-  config: Configuracion | null  // Agregá esto
+  config: Configuracion | null
 }
+
 interface FormData {
   nombre: string
   telefono: string
   tipoEntrega: 'retiro' | 'envio'
   direccion: string
-  tipoCoccion: 'horno' | 'fritas'  // Agregá esto
+  tipoCoccion: 'horno' | 'fritas'
   aclaraciones: string
 }
 
@@ -28,15 +29,22 @@ export default function CheckoutForm({ onBack, onClose, config }: CheckoutFormPr
     aclaraciones: '',
   })
 
+  // Bloquear scroll del body cuando el modal está abierto
+  useEffect(() => {
+    document.body.classList.add('modal-open')
+    return () => {
+      document.body.classList.remove('modal-open')
+    }
+  }, [])
+
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault()
     
-    // Generar mensaje de WhatsApp
     let mensaje = `*NUEVO PEDIDO*\n\n`
     mensaje += `*Cliente:* ${formData.nombre}\n`
     mensaje += `*Teléfono:* ${formData.telefono}\n`
     mensaje += `*Tipo:* ${formData.tipoEntrega === 'retiro' ? 'Retiro en local' : 'Envío a domicilio'}\n`
-    mensaje += `*Cocción:* ${formData.tipoCoccion === 'horno' ? 'Al horno' : 'Fritas'}\n`  // Agregá esto
+    mensaje += `*Cocción:* ${formData.tipoCoccion === 'horno' ? 'Al horno' : 'Fritas'}\n`
     
     if (formData.tipoEntrega === 'envio') {
       mensaje += `*Dirección:* ${formData.direccion}\n`
@@ -44,38 +52,38 @@ export default function CheckoutForm({ onBack, onClose, config }: CheckoutFormPr
     
     mensaje += `\n*DETALLE DEL PEDIDO:*\n\n`
     
-    // Agregar promociones
     if (promociones.length > 0) {
-      mensaje += ` *Promociones:*\n`
+      mensaje += `*Promociones:*\n`
       promociones.forEach((promo) => {
         mensaje += `• ${promo.promocion.nombre} - $${promo.promocion.precio}\n`
+        // Si tiene gustos seleccionados, mostrarlos
+        if (promo.gustosSeleccionados && promo.gustosSeleccionados.length > 0) {
+          promo.gustosSeleccionados.forEach((gusto) => {
+            mensaje += `  - ${gusto.cantidad}x ${gusto.empanada.nombre}\n`
+          })
+        }
       })
       mensaje += `\n`
     }
     
-    // Agregar items
     if (items.length > 0) {
-      mensaje += ` *Empanadas:*\n`
+      mensaje += `*Empanadas:*\n`
       items.forEach((item) => {
         mensaje += `• ${item.cantidad}x ${item.empanada.nombre} - $${item.empanada.precio * item.cantidad}\n`
       })
       mensaje += `\n`
     }
     
-    mensaje += ` *TOTAL: $${getTotal()}*\n`
+    mensaje += `*TOTAL: $${getTotal()}*\n`
     
     if (formData.aclaraciones) {
-      mensaje += `\n *Aclaraciones:* ${formData.aclaraciones}`
+      mensaje += `\n*Aclaraciones:* ${formData.aclaraciones}`
     }
     
-    // Codificar mensaje para URL
     const mensajeCodificado = encodeURIComponent(mensaje)
     const urlWhatsApp = `https://wa.me/${config?.telefono}?text=${mensajeCodificado}`
     
-    // Abrir WhatsApp
     window.open(urlWhatsApp, '_blank')
-    
-    // Limpiar carrito y cerrar
     clearCart()
     onClose()
   }
@@ -89,14 +97,14 @@ export default function CheckoutForm({ onBack, onClose, config }: CheckoutFormPr
 
   return (
     <div className="modal-overlay">
-      <div className="modal-content">
+      <div className="modal-content" style={{ maxHeight: '90vh' }}>
         <div className="modal-header">
           <h2>📋 Datos de Entrega</h2>
           <button className="close-button" onClick={onClose}>✕</button>
         </div>
 
-        <form onSubmit={handleSubmit}>
-          <div className="modal-body">
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', minHeight: 0, flex: 1 }}>
+          <div className="modal-body" style={{ overflowY: 'auto', flex: 1 }}>
             <div className="form-group">
               <label htmlFor="nombre">Nombre completo *</label>
               <input
@@ -136,19 +144,20 @@ export default function CheckoutForm({ onBack, onClose, config }: CheckoutFormPr
                 <option value="envio">Envío a domicilio</option>
               </select>
             </div>
-                <div className="form-group">
-      <label htmlFor="tipoCoccion">Tipo de cocción *</label>
-      <select
-        id="tipoCoccion"
-        name="tipoCoccion"
-        value={formData.tipoCoccion}
-        onChange={handleChange}
-        required
-      >
-        <option value="horno">Al horno</option>
-        <option value="fritas">Fritas</option>
-      </select>
-    </div>
+
+            <div className="form-group">
+              <label htmlFor="tipoCoccion">Tipo de cocción *</label>
+              <select
+                id="tipoCoccion"
+                name="tipoCoccion"
+                value={formData.tipoCoccion}
+                onChange={handleChange}
+                required
+              >
+                <option value="horno">Al horno</option>
+                <option value="fritas">Fritas</option>
+              </select>
+            </div>
 
             {formData.tipoEntrega === 'envio' && (
               <div className="form-group">
@@ -183,8 +192,8 @@ export default function CheckoutForm({ onBack, onClose, config }: CheckoutFormPr
                 <span>Total a pagar:</span>
                 <span className="summary-total">${getTotal()}</span>
               </div>
-              {formData.tipoEntrega === 'envio' && mockConfiguracion.costoEnvio > 0 && (
-                <p className="summary-note">+ ${mockConfiguracion.costoEnvio} de envío (a confirmar)</p>
+              {formData.tipoEntrega === 'envio' && config?.costoEnvio && config.costoEnvio > 0 && (
+                <p className="summary-note">+ ${config.costoEnvio} de envío (a confirmar)</p>
               )}
             </div>
           </div>

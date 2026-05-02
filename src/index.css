@@ -919,3 +919,12 @@ body.modal-open {
     visibility: hidden;
   }
 }
+.modal-content {
+  max-height: 90vh;
+  overflow: hidden;
+}
+
+.modal-body {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
